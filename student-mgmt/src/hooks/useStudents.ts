@@ -57,6 +57,22 @@ export function useUpdateStudent() {
   });
 }
 
+export function useStudentById(id: string) {
+  return useQuery({
+    queryKey: ['students', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      return data as Student;
+    },
+    enabled: !!id,
+  });
+}
+
 export function useDeleteStudent() {
   const queryClient = useQueryClient();
   return useMutation({

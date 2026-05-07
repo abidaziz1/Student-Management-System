@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Users, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Pencil, Trash2, Users, AlertTriangle, ExternalLink } from 'lucide-react';
 import type { Student } from '../../types';
 
 const STATUS_STYLES: Record<Student['status'], string> = {
@@ -102,6 +103,7 @@ interface Props {
 }
 
 export default function StudentTable({ students, isLoading, onEdit, onDelete }: Props) {
+  const navigate = useNavigate();
   const [pendingDelete, setPendingDelete] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -163,6 +165,14 @@ export default function StudentTable({ students, isLoading, onEdit, onDelete }: 
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/students/${student.id}`)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                          title="View profile"
+                          aria-label={`View profile of ${student.first_name} ${student.last_name}`}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => onEdit(student)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"

@@ -39,3 +39,17 @@ export interface Enrollment {
   status: 'enrolled' | 'completed' | 'dropped' | 'failed';
   enrolled_at: string;
 }
+
+// Joined query shapes returned by Supabase select with foreign-table embeds
+export interface CourseWithDepartment extends Course {
+  departments: Pick<Department, 'name' | 'code'> | null;
+}
+
+export interface EnrollmentWithDetails extends Enrollment {
+  students: Pick<Student, 'first_name' | 'last_name' | 'student_id'> | null;
+  courses: Pick<Course, 'title' | 'course_code'> | null;
+}
+
+export interface EnrollmentWithCourse extends Enrollment {
+  courses: Pick<Course, 'title' | 'course_code'> | null;
+}
