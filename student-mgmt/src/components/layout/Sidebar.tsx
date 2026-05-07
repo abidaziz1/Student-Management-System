@@ -8,11 +8,15 @@ const navItems = [
   { to: '/enrollments', label: 'Enrollments', icon: ClipboardList, end: false },
 ];
 
-export default function Sidebar() {
+interface Props {
+  onNavClick?: () => void;
+}
+
+export default function Sidebar({ onNavClick }: Props) {
   return (
-    <aside className="w-64 min-h-screen bg-[#1e2a3b] flex flex-col flex-shrink-0">
+    <aside className="w-64 h-full min-h-screen bg-[#1e2a3b] flex flex-col scrollbar-thin overflow-y-auto">
       {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10 flex-shrink-0">
         <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
           <GraduationCap className="w-5 h-5 text-white" />
         </div>
@@ -29,10 +33,11 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={end}
+            onClick={onNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-blue-500 text-white shadow-sm'
                   : 'text-slate-300 hover:bg-white/10 hover:text-white'
               }`
             }
@@ -44,7 +49,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-white/10">
+      <div className="px-6 py-4 border-t border-white/10 flex-shrink-0">
         <p className="text-slate-500 text-xs">&copy; {new Date().getFullYear()} UniAdmin</p>
       </div>
     </aside>
