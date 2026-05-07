@@ -15,6 +15,12 @@
     width: 100%;
     min-height: 100vh;
   }
+
+  /* Dark mode base colors */
+  .dark body {
+    background-color: #111827;
+    color: #f9fafb;
+  }
 }
 
 @keyframes page-fade-in {
@@ -42,4 +48,76 @@
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
+}
+
+/* ─── Print / PDF transcript styles ───────────────────────────────────────── */
+@media print {
+  /* Hide everything except the student detail content */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print\:block {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12px;
+  }
+
+  /* Remove shadows and backgrounds for printing */
+  .bg-white,
+  [class*="bg-"] {
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  .rounded-xl,
+  .rounded-2xl {
+    border-radius: 4px !important;
+  }
+
+  /* Sidebar and mobile header should not print */
+  aside,
+  header {
+    display: none !important;
+  }
+
+  /* Ensure main content uses full page width */
+  main {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Reset layout flex */
+  .flex.min-h-screen {
+    display: block !important;
+  }
+
+  /* Ensure tables render fully */
+  table {
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Avatar gradient won't print — use a grey square */
+  .bg-gradient-to-br {
+    background: #1e2a3b !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Color badges should print in color */
+  .bg-green-100, .bg-blue-100, .bg-yellow-100, .bg-red-100, .bg-gray-100 {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

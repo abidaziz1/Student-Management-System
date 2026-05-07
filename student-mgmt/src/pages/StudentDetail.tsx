@@ -10,10 +10,38 @@ import {
   BookOpen,
   AlertCircle,
   Loader2,
+  Printer,
+  Award,
 } from 'lucide-react';
 import { useStudentById } from '../hooks/useStudents';
 import { useStudentEnrollments } from '../hooks/useEnrollments';
 import type { Student, EnrollmentWithCourse } from '../types';
+
+// ─── GPA helpers ──────────────────────────────────────────────────────────────
+const GRADE_POINTS: Record<string, number> = {
+  A: 4.0, 'A-': 3.7,
+  'B+': 3.3, B: 3.0, 'B-': 2.7,
+  'C+': 2.3, C: 2.0, 'C-': 1.7,
+  'D+': 1.3, D: 1.0,
+  F: 0.0,
+};
+
+function computeGPA(enrollments: EnrollmentWithCourse[]): number | null {
+  const graded = enrollments.filter(
+    e => e.grade && e.grade in GRADE_POINTS && e.courses?.credits
+  );
+  if (graded.length === 0) return null;
+  const totalPoints = graded.reduce((sum, e) => sum + GRADE_POINTS[e.grade!] * (e.courses!.credits!), 0);
+  const totalCredits = graded.reduce((sum, e) => sum + e.courses!.credits!, 0);
+  return totalCredits > 0 ? Math.round((totalPoints / totalCredits) * 100) / 100 : null;
+}
+
+function gpaColor(gpa: number): string {
+  if (gpa >= 3.5) return 'text-green-600';
+  if (gpa >= 2.5) return 'text-blue-600';
+  if (gpa >= 1.5) return 'text-yellow-600';
+  return 'text-red-600';
+}
 
 // ─── Status + grade helpers ───────────────────────────────────────────────────
 const STUDENT_STATUS_STYLES: Record<Student['status'], string> = {
@@ -73,6 +101,9 @@ function EnrollmentRow({ enrollment }: { enrollment: EnrollmentWithCourse }) {
       <td className="px-4 py-3 text-sm text-gray-600 capitalize whitespace-nowrap">
         {enrollment.semester} {enrollment.year}
       </td>
+      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+        {enrollment.courses?.credits ? `${enrollment.courses.credits} cr` : '—'}
+      </td>
       <td className="px-4 py-3">
         {gradeStyle
           ? <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${gradeStyle}`}>{grade}</span>
@@ -124,25 +155,49 @@ export default function StudentDetail() {
 
   const fullName = `${student.first_name} ${student.last_name}`;
   const initials = `${student.first_name[0]}${student.last_name[0]}`.toUpperCase();
+  const gpa = computeGPA(enrollments);
+  const completedCredits = enrollments
+    .filter(e => e.status === 'completed' && e.courses?.credits)
+    .reduce((sum, e) => sum + (e.courses?.credits ?? 0), 0);
+
+  const handlePrint = () => window.print();
 
   return (
-    <div className="p-8 max-w-5xl">
-      {/* Back link */}
-      <button
-        onClick={() => navigate('/students')}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Students
-      </button>
+    <div className="p-8 max-w-5xl print:p-4 print:max-w-none">
+      {/* Back link + print — hidden when printing */}
+      <div className="flex items-center justify-between mb-6 print:hidden">
+        <button
+          onClick={() => navigate('/students')}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Students
+        </button>
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <Printer className="w-4 h-4" />
+          Print Transcript
+        </button>
+      </div>
+
+      {/* Print header — only visible in print */}
+      <div className="hidden print:block mb-6 border-b border-gray-300 pb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Student Transcript</h1>
+        <p className="text-gray-500 text-sm mt-1">UniAdmin — University Management System</p>
+        <p className="text-gray-400 text-xs mt-0.5">
+          Generated on {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Profile card ─────────────────────────────────────────── */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden print:border-black">
             {/* Avatar header */}
-            <div className="bg-gradient-to-br from-[#1e2a3b] to-[#2d3f58] px-6 py-8 flex flex-col items-center gap-3">
-              <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-2xl font-bold">
+            <div className="bg-gradient-to-br from-[#1e2a3b] to-[#2d3f58] px-6 py-8 flex flex-col items-center gap-3 print:bg-gray-800">
+              <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-2xl font-bold print:w-14 print:h-14 print:text-lg">
                 {initials}
               </div>
               <div className="text-center">
@@ -169,17 +224,58 @@ export default function StudentDetail() {
               <InfoRow icon={MapPin} label="Address" value={student.address} />
             </div>
           </div>
+
+          {/* GPA Card */}
+          {!loadingEnrollments && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5 print:border-black">
+              <div className="flex items-center gap-2 mb-4">
+                <Award className="w-4 h-4 text-gray-400" />
+                <h3 className="text-sm font-semibold text-gray-700">Academic Summary</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <p className={`text-3xl font-bold ${gpa !== null ? gpaColor(gpa) : 'text-gray-300'}`}>
+                    {gpa !== null ? gpa.toFixed(2) : '—'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Cumulative GPA</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-gray-900">{completedCredits}</p>
+                  <p className="text-xs text-gray-400 mt-1">Credits Earned</p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+                <div className="bg-gray-50 rounded-lg py-2">
+                  <p className="text-lg font-semibold text-gray-900">{enrollments.length}</p>
+                  <p className="text-xs text-gray-400">Total Courses</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg py-2">
+                  <p className="text-lg font-semibold text-gray-900">
+                    {enrollments.filter(e => e.status === 'completed').length}
+                  </p>
+                  <p className="text-xs text-gray-400">Completed</p>
+                </div>
+              </div>
+              {gpa !== null && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-center text-gray-500">
+                    {gpa >= 3.7 ? '🎓 Distinction' : gpa >= 3.0 ? 'Good Standing' : gpa >= 2.0 ? 'Satisfactory' : 'Academic Probation'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* ── Enrolled Courses tab ──────────────────────────────────── */}
+        {/* ── Enrolled Courses ──────────────────────────────────────── */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden print:border-black">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                 <BookOpen className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Enrolled Courses</h2>
+                <h2 className="text-base font-semibold text-gray-900">Course History</h2>
                 {!loadingEnrollments && (
                   <p className="text-xs text-gray-400">
                     {enrollments.length} enrollment{enrollments.length !== 1 ? 's' : ''}
@@ -192,7 +288,7 @@ export default function StudentDetail() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr className="bg-gray-50">
-                    {['Course', 'Term', 'Grade', 'Status', 'Enrolled On'].map(col => (
+                    {['Course', 'Term', 'Credits', 'Grade', 'Status', 'Enrolled On'].map(col => (
                       <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         {col}
                       </th>
@@ -203,7 +299,7 @@ export default function StudentDetail() {
                   {loadingEnrollments ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <tr key={i} className="border-b border-gray-100">
-                        {Array.from({ length: 5 }).map((__, j) => (
+                        {Array.from({ length: 6 }).map((__, j) => (
                           <td key={j} className="px-4 py-3">
                             <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: '70%' }} />
                           </td>
@@ -212,7 +308,7 @@ export default function StudentDetail() {
                     ))
                   ) : enrollments.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-12 text-center">
+                      <td colSpan={6} className="px-4 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <BookOpen className="w-8 h-8 text-gray-300" />
                           <p className="text-sm text-gray-400">No enrollments yet.</p>

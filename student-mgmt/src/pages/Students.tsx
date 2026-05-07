@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { UserPlus, Search, ChevronDown, AlertCircle } from 'lucide-react';
+import { UserPlus, Search, ChevronDown, AlertCircle, Upload } from 'lucide-react';
+import CSVImport from '../components/students/CSVImport';
 import {
   useStudents,
   useCreateStudent,
@@ -28,6 +29,7 @@ export default function Students() {
   const { showToast } = useToast();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | undefined>();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -100,13 +102,22 @@ export default function Students() {
               : `${students.length} student${students.length !== 1 ? 's' : ''} total`}
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add Student
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCsvImportOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Import CSV
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add Student
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -168,6 +179,9 @@ export default function Students() {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
+
+      {/* CSV Import */}
+      {csvImportOpen && <CSVImport onClose={() => setCsvImportOpen(false)} />}
     </div>
   );
 }

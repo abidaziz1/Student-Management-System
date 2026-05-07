@@ -26,7 +26,7 @@ export function useStudentEnrollments(studentId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('enrollments')
-        .select('*, courses(title, course_code)')
+        .select('*, courses(title, course_code, credits)')
         .eq('student_id', studentId)
         .order('year', { ascending: false });
       if (error) throw error;

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Menu, X, GraduationCap } from 'lucide-react';
+import { Menu, X, GraduationCap, Search } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { ToastProvider } from '../ui/Toast';
+import GlobalSearch from '../GlobalSearch';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { pathname } = useLocation();
 
   // Close sidebar on route change (handles mobile nav taps)
@@ -21,14 +23,22 @@ export default function Layout() {
     return () => document.removeEventListener('keydown', handler);
   }, [sidebarOpen]);
 
+  // Cmd+K / Ctrl+K to open global search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(o => !o);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   return (
     <ToastProvider>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* ── Sidebar ─────────────────────────────────────────── */}
-        {/*
-          Mobile: fixed overlay, slides in from left when sidebarOpen.
-          Desktop (md+): static in the flex flow, always visible.
-        */}
         <div
           className={[
             'fixed inset-y-0 left-0 z-30',
@@ -53,10 +63,10 @@ export default function Layout() {
         {/* ── Content area ───────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile top bar */}
-          <header className="sticky top-0 z-10 h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:hidden flex-shrink-0 shadow-sm">
+          <header className="sticky top-0 z-10 h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 md:hidden flex-shrink-0 shadow-sm">
             <button
               onClick={() => setSidebarOpen(o => !o)}
-              className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -66,11 +76,17 @@ export default function Layout() {
               <div className="w-6 h-6 rounded-md bg-blue-500 flex items-center justify-center">
                 <GraduationCap className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-semibold text-gray-900 text-sm">UniAdmin</span>
+              <span className="font-semibold text-gray-900 dark:text-white text-sm">UniAdmin</span>
             </div>
 
-            {/* Spacer to balance the hamburger on the left */}
-            <div className="w-8" />
+            {/* Search button on mobile */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Open search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
           </header>
 
           {/* Page content with fade-in on route change */}
@@ -81,6 +97,9 @@ export default function Layout() {
           </main>
         </div>
       </div>
+
+      {/* Global Search overlay */}
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </ToastProvider>
   );
 }
